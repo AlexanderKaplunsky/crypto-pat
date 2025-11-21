@@ -23,6 +23,66 @@ This project requires API keys for external services:
 
 ⚠️ **Never commit `.env` to Git!**
 
+## Project Structure
+
+```
+src/
+├── components/          # React components
+│   ├── Layout/         # Layout components (Header, Footer, Container)
+│   ├── Pet/            # Pet-related components (PetDisplay, PetSprite, Animations)
+│   ├── UI/             # Reusable UI components (Button, Modal, Input)
+│   └── Modals/         # Modal components (EvolutionModal, SchadenfreudeModal)
+├── contexts/           # React Context providers (PetContext for global state)
+├── hooks/              # Custom React hooks (useCryptoUpdates, useEvolution)
+├── services/           # API service classes (CryptoService, WeatherService, GeminiService)
+├── utils/              # Utility functions (moodCalculator, cacheManager, evolutionChecker)
+├── types/              # TypeScript type definitions (interfaces, enums)
+├── styles/             # Global styles (variables.css, global.css) and CSS modules
+└── config/             # Configuration files (env.ts)
+```
+
+### Folder Descriptions
+
+**components/** - React components organized by domain
+- `Layout/` - Page structure components (Header, Footer, Container)
+- `Pet/` - Pet-specific components (PetDisplay, PetSprite, MoodMeter, ParticleSystem)
+- `UI/` - Reusable UI primitives (Button, Modal, Input, Dropdown)
+- `Modals/` - Modal dialogs (EvolutionModal, SchadenfreudeModal, ComedyJudgeModal)
+
+**contexts/** - React Context for global state management
+- `PetContext.tsx` - Global pet state (mood, evolution, interactions)
+- No external state management library (React Context only)
+
+**hooks/** - Custom React hooks for reusable logic
+- `useCryptoUpdates.ts` - Fetch and update crypto prices
+- `useEvolutionCheck.ts` - Check evolution thresholds
+- `useWeather.ts` - Fetch weather data
+
+**services/** - API service classes (singleton pattern)
+- `CryptoService.ts` - CoinGecko API integration
+- `WeatherService.ts` - OpenWeather API integration
+- `GeminiService.ts` - Google Gemini AI integration
+
+**utils/** - Pure utility functions (no side effects)
+- `moodCalculator.ts` - Calculate mood from price/weather
+- `cacheManager.ts` - In-memory caching logic
+- `evolutionChecker.ts` - Evolution threshold logic
+- `cooldownManager.ts` - Cooldown timing logic
+
+**types/** - TypeScript type definitions
+- `pet.types.ts` - Pet-related types (PetState, MoodLevel, EvolutionStage)
+- `crypto.types.ts` - Crypto-related types (CoinInfo, CryptoPrice)
+- `api.types.ts` - API response types
+
+**styles/** - Global styles and CSS modules
+- `variables.css` - CSS custom properties (colors, spacing, fonts)
+- `global.css` - Global resets and base styles
+- Component-specific CSS modules co-located with components
+
+**config/** - Configuration and constants
+- `env.ts` - Environment variable access
+- `constants.ts` - App-wide constants (coin list, thresholds)
+
 ## Getting Started
 
 This project uses React + TypeScript + Vite for a modern development experience.
