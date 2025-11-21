@@ -25,13 +25,20 @@
   --color-button-green: #32CD32;  /* Primary action buttons */
   --color-button-green-hover: #28a028;  /* Primary button hover state */
   --color-button-red: #DC143C;    /* Destructive actions */
+  --color-comedy-purple: #a855f7;  /* Comedy/Joke button color */
+  --color-comedy-purple-hover: #8b5cf6;  /* Comedy button hover state */
+  --color-success: #22c55e;      /* Success states */
+  --color-warning: #eab308;       /* Warning states */
+  --color-error: #DC143C;         /* Error states */
   --color-border: #696969;        /* Borders and outlines */
   --color-white: #FFFFFF;
   --color-black: #000000;
+  --color-bg-primary: #FFFFFF;   /* Primary background */
   --color-bg-secondary: #f0f0f0;  /* Secondary background (disabled states) */
   
   /* Text Colors */
   --color-text-dark: #2F4F4F;     /* Primary text */
+  --color-text-primary: #2F4F4F;  /* Primary text (alias) */
   --color-text-light: #F5F5F5;    /* Text on dark backgrounds */
   --color-text-inverse: #fff;     /* Text on colored backgrounds */
   --color-text-secondary: #666;   /* Secondary/muted text */
@@ -48,6 +55,7 @@
   /* ===== TYPOGRAPHY ===== */
   --font-pixel: 'Press Start 2P', monospace;  /* Headings, buttons */
   --font-mono: 'VT323', monospace;            /* Body text, stats */
+  --font-body: 'VT323', monospace;            /* Body text (alias) */
   
   --font-size-xs: 8px;
   --font-size-sm: 12px;

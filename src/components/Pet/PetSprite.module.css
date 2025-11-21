@@ -110,4 +110,23 @@
   animation: toNeutral 0.5s ease-out forwards;
 }
 
+@keyframes laughing {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.1) rotate(-5deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(-5deg);
+  }
+}
+
+.laughing {
+  animation: laughing 1.5s ease-in-out;
+}
+
 

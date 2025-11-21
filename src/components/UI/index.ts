@@ -6,4 +6,5 @@ export { Sparkline } from './Sparkline';
 export { StatsPanel } from './StatsPanel';
 export { Toast } from './Toast';
 export { CheerUpButton } from './CheerUpButton';
+export { TellJokeButton } from './TellJokeButton';
 export { WeatherIndicator } from './WeatherIndicator';

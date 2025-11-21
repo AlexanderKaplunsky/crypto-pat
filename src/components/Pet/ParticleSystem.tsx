@@ -2,8 +2,10 @@ import { useEffect, useRef } from 'react';
 import styles from './ParticleSystem.module.css';
 
 const GOLD_PALETTE = ['#FFD700', '#FFA500', '#FFFF00'] as const;
+const CONFETTI_PALETTE = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#FF69B4', '#32CD32'] as const;
 const MAX_PARTICLES = 50;
 const DEFAULT_COUNT = 15;
+const CONFETTI_COUNT = 18; // 15-20 particles
 const PARTICLE_LIFETIME_MIN = 800;
 const PARTICLE_LIFETIME_MAX = 1400;
 
@@ -16,17 +18,18 @@ interface Particle {
   size: number;
   life: number;
   ttl: number;
-  color: (typeof GOLD_PALETTE)[number];
+  color: (typeof GOLD_PALETTE)[number] | (typeof CONFETTI_PALETTE)[number];
 }
 
 export interface ParticleSystemProps {
   active: boolean;
   particleCount?: number;
+  triggerConfetti?: number; // When this value changes, trigger confetti burst
 }
 
 const randomBetween = (min: number, max: number) => Math.random() * (max - min) + min;
 
-export const ParticleSystem = ({ active, particleCount = DEFAULT_COUNT }: ParticleSystemProps) => {
+export const ParticleSystem = ({ active, particleCount = DEFAULT_COUNT, triggerConfetti }: ParticleSystemProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);
   const isActiveRef = useRef(active);
@@ -34,6 +37,7 @@ export const ParticleSystem = ({ active, particleCount = DEFAULT_COUNT }: Partic
   const frameRef = useRef<number | null>(null);
   const spawnAccumulatorRef = useRef(0);
   const lastTimestampRef = useRef<number | null>(null);
+  const prevConfettiTriggerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     isActiveRef.current = active;
@@ -45,6 +49,41 @@ export const ParticleSystem = ({ active, particleCount = DEFAULT_COUNT }: Partic
   useEffect(() => {
     targetCountRef.current = Math.min(particleCount, MAX_PARTICLES);
   }, [particleCount]);
+
+  // Handle confetti trigger
+  useEffect(() => {
+    if (triggerConfetti !== undefined && triggerConfetti !== prevConfettiTriggerRef.current) {
+      prevConfettiTriggerRef.current = triggerConfetti;
+      
+      // Spawn confetti burst
+      const canvas = canvasRef.current;
+      if (canvas) {
+        for (let i = 0; i < CONFETTI_COUNT; i++) {
+          // Use setTimeout to spread particles slightly
+          setTimeout(() => {
+            const width = canvas.width || 400;
+            const height = canvas.height || 400;
+            const originX = width / 2 + randomBetween(-40, 40);
+            const originY = height * 0.4 + randomBetween(-20, 20);
+
+            const particle: Particle = {
+              id: Date.now() + i,
+              x: originX,
+              y: originY,
+              vx: randomBetween(-0.3, 0.3),
+              vy: randomBetween(-0.8, -1.2),
+              size: randomBetween(3, 5),
+              life: 0,
+              ttl: randomBetween(PARTICLE_LIFETIME_MIN, PARTICLE_LIFETIME_MAX),
+              color: CONFETTI_PALETTE[Math.floor(Math.random() * CONFETTI_PALETTE.length)],
+            };
+
+            particlesRef.current.push(particle);
+          }, i * 20); // Stagger particles slightly
+        }
+      }
+    }
+  }, [triggerConfetti]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -82,22 +121,25 @@ export const ParticleSystem = ({ active, particleCount = DEFAULT_COUNT }: Partic
 
     let particleId = 0;
 
-    const spawnParticle = () => {
+    const spawnParticle = (isConfetti = false) => {
       const width = canvas.width || 400;
       const height = canvas.height || 400;
       const originX = width / 2 + randomBetween(-30, 30);
       const originY = height * 0.4 + randomBetween(-10, 10);
 
+      const palette = isConfetti ? CONFETTI_PALETTE : GOLD_PALETTE;
+      const velocityMultiplier = isConfetti ? 1.5 : 1;
+
       const particle: Particle = {
         id: particleId++,
         x: originX,
         y: originY,
-        vx: randomBetween(-0.2, 0.2),
-        vy: randomBetween(-0.6, -1),
+        vx: randomBetween(-0.2, 0.2) * velocityMultiplier,
+        vy: randomBetween(-0.6, -1) * velocityMultiplier,
         size: randomBetween(2, 4),
         life: 0,
         ttl: randomBetween(PARTICLE_LIFETIME_MIN, PARTICLE_LIFETIME_MAX),
-        color: GOLD_PALETTE[Math.floor(Math.random() * GOLD_PALETTE.length)],
+        color: palette[Math.floor(Math.random() * palette.length)],
       };
 
       particlesRef.current.push(particle);
@@ -152,7 +194,7 @@ export const ParticleSystem = ({ active, particleCount = DEFAULT_COUNT }: Partic
           spawnAccumulatorRef.current >= spawnInterval &&
           particlesRef.current.length < MAX_PARTICLES
         ) {
-          spawnParticle();
+          spawnParticle(false);
           spawnAccumulatorRef.current -= spawnInterval;
         }
       }

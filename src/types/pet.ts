@@ -21,6 +21,11 @@ export interface PetSpriteProps {
    * can run without transform conflicts.
    */
   isTransitioning?: boolean;
+  /**
+   * When true, triggers laughing animation (shake + bounce + rotate).
+   * Animation duration is 1.5 seconds.
+   */
+  isLaughing?: boolean;
 }
 
 

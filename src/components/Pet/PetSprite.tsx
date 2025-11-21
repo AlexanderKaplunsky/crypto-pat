@@ -40,10 +40,13 @@ export const PetSprite = ({
   evolutionStage,
   isAnimating = true,
   isTransitioning = false,
+  isLaughing = false,
   ...imgProps
 }: PetSpriteProps & Omit<ImgProps, 'src' | 'alt' | 'width' | 'height'>) => {
   const [transitionClass, setTransitionClass] = useState<TransitionClassName | null>(null);
+  const [laughingClass, setLaughingClass] = useState<string | null>(null);
   const prevMoodRef = useRef<MoodState>(mood);
+  const prevLaughingRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (prevMoodRef.current === mood) {
@@ -70,6 +73,25 @@ export const PetSprite = ({
     };
   }, [mood]);
 
+  // Handle laughing animation
+  useEffect(() => {
+    if (isLaughing && !prevLaughingRef.current) {
+      // Start laughing animation
+      setLaughingClass(styles.laughing);
+      prevLaughingRef.current = true;
+
+      // Clear after animation completes (1.5s)
+      const timer = setTimeout(() => {
+        setLaughingClass(null);
+        prevLaughingRef.current = false;
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    } else if (!isLaughing) {
+      prevLaughingRef.current = false;
+    }
+  }, [isLaughing]);
+
   const isMoodTransitioning = Boolean(transitionClass);
   const stageClass = styles[`stage${evolutionStage}` as keyof typeof styles];
   const className = [
@@ -78,6 +100,7 @@ export const PetSprite = ({
     isAnimating ? styles.animating : styles.paused,
     isTransitioning || isMoodTransitioning ? styles.transitioning : '',
     transitionClass ? styles[transitionClass] : '',
+    laughingClass,
   ]
     .filter(Boolean)
     .join(' ');

@@ -1,10 +1,11 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import './App.css';
 import { EvolutionAnimation, ParticleSystem, PetDisplay, PetSprite } from './components';
-import { CoinSelector, CryptoStatusBar, MoodMeter, StatsPanel, Toast, CheerUpButton, WeatherIndicator } from './components/UI';
-import { EvolutionModal, SchadenfreudeModal } from './components/Modals';
+import { CoinSelector, CryptoStatusBar, MoodMeter, StatsPanel, Toast, CheerUpButton, TellJokeButton, WeatherIndicator } from './components/UI';
+import { EvolutionModal, SchadenfreudeModal, ComedyJudgeModal, ComedyJudgeResultsModal } from './components/Modals';
 import petDisplayStyles from './components/Pet/PetDisplay.module.css';
-import { useCryptoUpdates, useEvolutionCheck, useGeolocation, useSchadenfreude, useToast, useWeatherUpdates } from './hooks';
+import { useCryptoUpdates, useEvolutionCheck, useGeolocation, useSchadenfreude, useToast, useWeatherUpdates, useComedyJudge } from './hooks';
+import type { JokeRating } from './types/comedy';
 import { calculateMood, loadPetState, savePetState } from './utils';
 import { COINS } from './types';
 import type { MoodState, PetState } from './types/pet';
@@ -37,6 +38,13 @@ function App() {
   // Schadenfreude modal state
   const [schadenfreudeModalData, setSchadenfreudeModalData] = useState<CryptoComparison | null>(null);
   const [showSchadenfreudeModal, setShowSchadenfreudeModal] = useState(false);
+
+  // Comedy Judge modal state
+  const [showComedyJudgeModal, setShowComedyJudgeModal] = useState(false);
+  const [showComedyResultsModal, setShowComedyResultsModal] = useState(false);
+  const [comedyRating, setComedyRating] = useState<JokeRating | null>(null);
+  const [isLaughing, setIsLaughing] = useState(false);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
 
   // Evolution state
   const [isEvolving, setIsEvolving] = useState(false);
@@ -184,6 +192,14 @@ function App() {
     cooldownSeconds: schadenfreudeCooldownSeconds,
   } = useSchadenfreude(selectedCoinId, moodLevel, handleMoodUpdate);
 
+  // Comedy Judge hook
+  const {
+    submitJoke,
+    isLoading: isComedyLoading,
+    isOnCooldown: isComedyOnCooldown,
+    cooldownSeconds: comedyCooldownSeconds,
+  } = useComedyJudge(petState.mood, moodLevel, handleMoodUpdate);
+
   // Schadenfreude handler
   const handleCheerUp = useCallback(async () => {
     // Increment interaction count
@@ -200,6 +216,58 @@ function App() {
       showToast('Could not find a worse-performing coin. Your pet might already be doing great! 🎉', 'info');
     }
   }, [triggerSchadenfreude, isSchadenfreudeOnCooldown, showToast]);
+
+  // Comedy Judge handlers
+  const handleTellJoke = useCallback(() => {
+    setShowComedyJudgeModal(true);
+  }, []);
+
+  const handleComedySubmit = useCallback(async (jokeText: string) => {
+    try {
+      const rating = await submitJoke(jokeText);
+      if (rating) {
+        setComedyRating(rating);
+        setShowComedyJudgeModal(false);
+        setShowComedyResultsModal(true);
+
+        // Check if successful (threshold check is done in hook, but we need to check for animation)
+        const thresholds = {
+          happy: 3,
+          neutral: 5,
+          sad: 7,
+        };
+        const threshold = thresholds[petState.mood] ?? thresholds.neutral;
+        
+        if (rating.rating >= threshold) {
+          // Trigger laughing animation
+          setIsLaughing(true);
+          // Clear laughing animation after 1.5 seconds
+          setTimeout(() => {
+            setIsLaughing(false);
+          }, 1500);
+          // Trigger confetti
+          setConfettiTrigger((prev) => prev + 1);
+          // Increment interaction count
+          setInteractionCount((prev) => prev + 1);
+          // Show success toast
+          showToast('Pet laughed! Mood improved! 😄', 'success');
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to rate joke';
+      showToast(errorMessage, 'error');
+    }
+  }, [submitJoke, petState.mood, showToast]);
+
+  const handleComedyResultsClose = useCallback(() => {
+    setShowComedyResultsModal(false);
+    setComedyRating(null);
+  }, []);
+
+  const handleComedySuccess = useCallback(() => {
+    // This is called when results modal detects success
+    // Animation and confetti are already triggered in handleComedySubmit
+  }, []);
 
   // Track pet age (increment every second)
   useEffect(() => {
@@ -295,7 +363,7 @@ function App() {
         />
 
         <PetDisplay>
-          <ParticleSystem active={petState.mood === 'happy'} />
+          <ParticleSystem active={petState.mood === 'happy'} triggerConfetti={confettiTrigger} />
           <div className={petDisplayStyles.petContainer}>
             <EvolutionAnimation
               isActive={isEvolving}
@@ -307,6 +375,7 @@ function App() {
                 mood={petState.mood}
                 evolutionStage={petState.evolutionStage}
                 isAnimating={petState.isAnimating && !isEvolving}
+                isLaughing={isLaughing}
                 aria-live="polite"
               />
             </EvolutionAnimation>
@@ -314,12 +383,18 @@ function App() {
               moodLevel={moodLevel}
               moodState={petState.mood}
             />
-            <div style={{ marginTop: 'var(--spacing-md)' }}>
+            <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap', justifyContent: 'center' }}>
               <CheerUpButton
                 onClick={handleCheerUp}
                 isLoading={isSchadenfreudeLoading}
                 isOnCooldown={isSchadenfreudeOnCooldown}
                 cooldownSeconds={schadenfreudeCooldownSeconds}
+              />
+              <TellJokeButton
+                onClick={handleTellJoke}
+                isLoading={isComedyLoading}
+                isOnCooldown={isComedyOnCooldown}
+                cooldownSeconds={comedyCooldownSeconds}
               />
             </div>
           </div>
@@ -369,6 +444,21 @@ function App() {
           currentStage={evolutionData.currentStage}
           nextStage={evolutionData.nextStage}
           petMood={petState.mood}
+        />
+      )}
+      <ComedyJudgeModal
+        isOpen={showComedyJudgeModal}
+        onClose={() => setShowComedyJudgeModal(false)}
+        onSubmit={handleComedySubmit}
+        isLoading={isComedyLoading}
+      />
+      {comedyRating && (
+        <ComedyJudgeResultsModal
+          isOpen={showComedyResultsModal}
+          onClose={handleComedyResultsClose}
+          rating={comedyRating}
+          currentMood={petState.mood}
+          onSuccess={handleComedySuccess}
         />
       )}
     </main>
