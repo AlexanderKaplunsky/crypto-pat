@@ -96,6 +96,21 @@ Currently, two official plugins are available:
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
+## Sprite Asset Pipeline
+
+Regenerate the nine mood × stage pet sprites by running:
+
+```
+python3 scripts/generate_pet_sprites.py
+```
+
+Requirements:
+
+- Python 3.10+
+- [Pillow](https://python-pillow.org/) (`python3 -m pip install pillow`)
+
+The script writes PNGs to `public/assets/sprites` using the naming scheme `pet-{stage}-{mood}.png`, matching the `PetSprite` component expectations and the Epic 2 art specification.
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:

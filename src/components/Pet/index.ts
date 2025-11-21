@@ -1,2 +1,3 @@
-// Pet component exports will be added here
-export {};
+export { PetDisplay } from './PetDisplay';
+export { PetSprite } from './PetSprite';
+export { ParticleSystem } from './ParticleSystem';

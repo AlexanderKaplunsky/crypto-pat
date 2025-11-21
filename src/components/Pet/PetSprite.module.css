@@ -1,0 +1,113 @@
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes toHappy {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(1.2);
+    transform: scale(1.1);
+  }
+}
+
+@keyframes toSad {
+  0%,
+  100% {
+    filter: saturate(0.7);
+    transform: scale(1);
+  }
+  50% {
+    filter: saturate(0.7);
+    transform: scale(0.95);
+  }
+}
+
+@keyframes toNeutral {
+  0% {
+    filter: brightness(1.1) saturate(1.1);
+    transform: scale(1.02);
+  }
+  100% {
+    filter: brightness(1) saturate(1);
+    transform: scale(1);
+  }
+}
+
+.sprite {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  transform-origin: center bottom;
+  will-change: transform, filter;
+  transition: filter 180ms ease;
+  animation: breathe 2s ease-in-out infinite;
+}
+
+.stage1 {
+  width: 64px;
+  height: 64px;
+}
+
+.stage2 {
+  width: 128px;
+  height: 128px;
+}
+
+.stage3 {
+  width: 192px;
+  height: 192px;
+}
+
+.animating {
+  transition: transform 160ms steps(2), filter 180ms ease;
+}
+
+.animating:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.paused {
+  animation-play-state: paused;
+}
+
+.transitioning {
+  animation-play-state: paused;
+}
+
+.sprite[data-mood='sad'] {
+  filter: saturate(0.7);
+}
+
+.sprite[data-mood='happy'] {
+  filter: saturate(1.1);
+}
+
+.transitionToHappy {
+  animation: toHappy 0.5s ease-out forwards;
+}
+
+.transitionToSad {
+  animation: toSad 0.5s ease-out forwards;
+}
+
+.transitionToNeutral {
+  animation: toNeutral 0.5s ease-out forwards;
+}
+
+
