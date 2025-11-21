@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * Validation tests for moodCalculator
  * Run with: npx tsx src/utils/__moodCalculator.test.ts
