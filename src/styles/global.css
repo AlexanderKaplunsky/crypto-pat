@@ -1,0 +1,121 @@
+/**
+ * Global Styles
+ * 
+ * Includes CSS reset, base styles, and utility classes
+ */
+
+/* Import design system variables */
+@import './variables.css';
+
+/* ===== CSS RESET ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== BASE STYLES ===== */
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  color: var(--color-text-dark);
+  background: linear-gradient(
+    to bottom,
+    var(--color-sky-blue) 0%,
+    var(--color-sky-blue) 70%,
+    var(--color-grass-green) 70%,
+    var(--color-grass-green) 100%
+  );
+  min-height: 100vh;
+  line-height: var(--line-height-normal);
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== TYPOGRAPHY ===== */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-pixel);
+  line-height: var(--line-height-tight);
+  font-weight: normal;  /* Pixel fonts don't have bold */
+}
+
+h1 { font-size: var(--font-size-xl); }
+h2 { font-size: var(--font-size-lg); }
+h3 { font-size: var(--font-size-md); }
+
+/* ===== PIXEL ART RENDERING ===== */
+img,
+canvas {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* ===== FORM ELEMENTS ===== */
+button {
+  font-family: var(--font-pixel);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+input,
+textarea,
+select {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  color: var(--color-text-dark);
+}
+
+/* ===== FOCUS STYLES ===== */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-happy-yellow);
+  outline-offset: 2px;
+}
+
+/* ===== UTILITY CLASSES ===== */
+.pixel-border {
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+

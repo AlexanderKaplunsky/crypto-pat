@@ -1,6 +1,6 @@
 /**
  * Environment Configuration
- * 
+ *
  * Centralizes access to environment variables.
  * All API keys and configuration should be accessed through this module.
  */
@@ -46,4 +46,3 @@ declare global {
     VITE_GEMINI_API_KEY: string;
   }
 }
-
