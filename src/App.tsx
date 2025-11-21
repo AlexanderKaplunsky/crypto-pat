@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react';
 import './App.css';
 import { ParticleSystem, PetDisplay, PetSprite } from './components';
+import { CoinSelector, CryptoStatusBar } from './components/UI';
 import type { MoodState, PetState } from './types/pet';
 
 const MOOD_OPTIONS: MoodState[] = ['happy', 'neutral', 'sad'];
 
 function App() {
+  const [selectedCoinId, setSelectedCoinId] = useState<string>('bitcoin');
   const [petState, setPetState] = useState<PetState>({
     mood: 'happy',
     evolutionStage: 2,
@@ -25,7 +27,13 @@ function App() {
         <header className="appHeader">
           <h1>Crypto Pet</h1>
           <p>Keep your pixel companion happy and thriving.</p>
+          <CoinSelector 
+            selectedCoinId={selectedCoinId}
+            onCoinChange={setSelectedCoinId}
+          />
         </header>
+
+        <CryptoStatusBar coinId={selectedCoinId} />
 
         <PetDisplay>
           <ParticleSystem active={petState.mood === 'happy'} />

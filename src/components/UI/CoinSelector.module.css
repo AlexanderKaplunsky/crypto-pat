@@ -1,0 +1,33 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.label {
+  font-family: var(--font-pixel);
+  font-size: 0.875rem;
+  color: var(--color-text-dark);
+}
+
+.select {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-pixel);
+  font-size: 0.875rem;
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  border-radius: 0;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+.select:focus {
+  outline: 2px solid var(--color-button-green);
+  outline-offset: 2px;
+}
+
+.select:hover {
+  border-color: var(--color-button-green);
+}
+

@@ -1,2 +1,1 @@
-// Custom hook exports will be added here
-export {};
+export { useCryptoUpdates } from './useCryptoUpdates';

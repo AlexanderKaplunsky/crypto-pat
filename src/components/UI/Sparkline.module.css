@@ -1,0 +1,38 @@
+.container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.svg {
+  display: block;
+}
+
+.placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--color-border);
+  opacity: 0.5;
+}
+
+.placeholderText {
+  font-family: var(--font-pixel);
+  font-size: 0.625rem;
+  color: var(--color-text-dark);
+  opacity: 0.6;
+}
+
+.green {
+  color: var(--color-button-green);
+}
+
+.red {
+  color: #ff4444;
+}
+
+.gray {
+  color: var(--color-text-dark);
+  opacity: 0.7;
+}
+
