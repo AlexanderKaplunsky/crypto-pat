@@ -3,32 +3,37 @@ import styles from './Toast.module.css';
 
 interface ToastProps {
   message: string;
-  type?: 'error' | 'warning' | 'info';
+  type?: 'success' | 'error' | 'warning' | 'info';
   duration?: number;
   onClose?: () => void;
+  style?: React.CSSProperties;
 }
 
 export const Toast = ({ 
   message, 
   type = 'info', 
-  duration = 5000,
-  onClose 
+  duration = 3000,
+  onClose,
+  style
 }: ToastProps) => {
-  const [visible, setVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setVisible(false);
-      onClose?.();
+      setIsVisible(false);
+      setTimeout(() => {
+        onClose?.();
+      }, 300); // Wait for fade-out animation
     }, duration);
 
     return () => clearTimeout(timer);
   }, [duration, onClose]);
 
-  if (!visible) return null;
-
   return (
-    <div className={`${styles.toast} ${styles[type]}`}>
+    <div 
+      className={`${styles.toast} ${styles[type]} ${!isVisible ? styles.hidden : ''}`}
+      style={style}
+    >
       {message}
     </div>
   );
