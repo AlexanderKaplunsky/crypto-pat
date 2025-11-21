@@ -1,0 +1,133 @@
+.evolutionAnimation {
+  position: relative;
+  display: inline-block;
+}
+
+.evolutionAnimation__glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200%;
+  height: 200%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+.evolutionAnimation--glow .evolutionAnimation__glow {
+  opacity: 0.8;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.6) 0%, transparent 70%);
+  animation: glowPulse 1s ease-in-out;
+}
+
+.evolutionAnimation--burst {
+  animation: screenShake 0.3s ease-out;
+}
+
+.evolutionAnimation--transform .evolutionAnimation__content {
+  animation: transformFlash 0.5s ease-in-out;
+}
+
+.evolutionAnimation--fade .evolutionAnimation__glow {
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+.evolutionAnimation__content {
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes glowPulse {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes screenShake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-2px, -2px);
+  }
+  50% {
+    transform: translate(2px, 2px);
+  }
+  75% {
+    transform: translate(-2px, 2px);
+  }
+}
+
+@keyframes transformFlash {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.5) contrast(1.2);
+  }
+}
+
+.particleBurst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+  width: 0;
+  height: 0;
+}
+
+.particleBurst__particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #ffd700;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #ffd700, 0 0 8px rgba(255, 215, 0, 0.5);
+  animation: particleBurst 1s ease-out forwards;
+  animation-delay: var(--delay, 0s);
+  transform-origin: center center;
+}
+
+@keyframes particleBurst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--end-x, 0), var(--end-y, 0)) scale(0);
+  }
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .evolutionAnimation--burst {
+    animation: none;
+  }
+
+  .evolutionAnimation__glow {
+    transition: opacity 0.3s ease;
+  }
+
+  .particleBurst__particle {
+    animation-duration: 0.5s;
+  }
+}
+

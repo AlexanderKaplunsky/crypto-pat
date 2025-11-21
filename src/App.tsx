@@ -1,14 +1,16 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import './App.css';
-import { ParticleSystem, PetDisplay, PetSprite } from './components';
-import { CoinSelector, CryptoStatusBar, MoodMeter, Toast, CheerUpButton, WeatherIndicator } from './components/UI';
-import { SchadenfreudeModal } from './components/Modals';
+import { EvolutionAnimation, ParticleSystem, PetDisplay, PetSprite } from './components';
+import { CoinSelector, CryptoStatusBar, MoodMeter, StatsPanel, Toast, CheerUpButton, WeatherIndicator } from './components/UI';
+import { EvolutionModal, SchadenfreudeModal } from './components/Modals';
 import petDisplayStyles from './components/Pet/PetDisplay.module.css';
-import { useCryptoUpdates, useGeolocation, useSchadenfreude, useToast, useWeatherUpdates } from './hooks';
+import { useCryptoUpdates, useEvolutionCheck, useGeolocation, useSchadenfreude, useToast, useWeatherUpdates } from './hooks';
 import { calculateMood, loadPetState, savePetState } from './utils';
 import { COINS } from './types';
 import type { MoodState, PetState } from './types/pet';
 import type { CryptoComparison } from './services/CryptoService';
+import type { EvolutionCheckResult } from './utils/evolutionChecker';
+import type { EvolutionStage } from './utils/evolutionChecker';
 
 const MOOD_OPTIONS: MoodState[] = ['happy', 'neutral', 'sad'];
 
@@ -35,6 +37,18 @@ function App() {
   // Schadenfreude modal state
   const [schadenfreudeModalData, setSchadenfreudeModalData] = useState<CryptoComparison | null>(null);
   const [showSchadenfreudeModal, setShowSchadenfreudeModal] = useState(false);
+
+  // Evolution state
+  const [isEvolving, setIsEvolving] = useState(false);
+  const [showEvolutionModal, setShowEvolutionModal] = useState(false);
+  const [evolutionData, setEvolutionData] = useState<{
+    currentStage: EvolutionStage;
+    nextStage: EvolutionStage;
+  } | null>(null);
+
+  // Track pet age and interactions for evolution
+  const [ageSeconds, setAgeSeconds] = useState<number>(0);
+  const [interactionCount, setInteractionCount] = useState<number>(0);
   
   // Get geolocation for weather
   const { latitude, longitude } = useGeolocation();
@@ -172,6 +186,9 @@ function App() {
 
   // Schadenfreude handler
   const handleCheerUp = useCallback(async () => {
+    // Increment interaction count
+    setInteractionCount((prev) => prev + 1);
+    
     const comparison = await triggerSchadenfreude();
     
     if (comparison) {
@@ -183,6 +200,57 @@ function App() {
       showToast('Could not find a worse-performing coin. Your pet might already be doing great! 🎉', 'info');
     }
   }, [triggerSchadenfreude, isSchadenfreudeOnCooldown, showToast]);
+
+  // Track pet age (increment every second)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAgeSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Evolution handler
+  const handleEvolution = useCallback((result: EvolutionCheckResult) => {
+    if (!result.nextStage) return;
+
+    // Convert string stage to number for petState
+    const stageMap: Record<EvolutionStage, 1 | 2 | 3> = {
+      baby: 1,
+      adult: 2,
+      legendary: 3,
+    };
+
+    // Update pet state to new evolution stage
+    setPetState((prev) => ({
+      ...prev,
+      evolutionStage: stageMap[result.nextStage!],
+    }));
+
+    // Store evolution data for modal
+    setEvolutionData({
+      currentStage: result.currentStage,
+      nextStage: result.nextStage,
+    });
+
+    // Start evolution animation
+    setIsEvolving(true);
+
+    // Show modal after animation completes (3 seconds)
+    setTimeout(() => {
+      setIsEvolving(false);
+      setShowEvolutionModal(true);
+    }, 3000);
+  }, []);
+
+  // Evolution check hook
+  useEvolutionCheck({
+    petState: {
+      ...petState,
+      ageSeconds,
+      interactionCount,
+    },
+    onEvolution: handleEvolution,
+  });
 
   // Manual mood override (for testing/debugging - can be removed in production)
   const handleMoodChange = useCallback((nextMood: MoodState) => {
@@ -198,6 +266,8 @@ function App() {
       mood: nextMood,
     }));
     setMoodLevel(moodLevelMap[nextMood]);
+    // Increment interaction count on manual mood change
+    setInteractionCount((prev) => prev + 1);
   }, []);
 
   return (
@@ -216,15 +286,30 @@ function App() {
 
         <WeatherIndicator weather={weather} isLoading={isWeatherLoading} />
 
+        <StatsPanel
+          petState={{
+            ...petState,
+            ageSeconds,
+            interactionCount,
+          }}
+        />
+
         <PetDisplay>
           <ParticleSystem active={petState.mood === 'happy'} />
           <div className={petDisplayStyles.petContainer}>
-            <PetSprite
-              mood={petState.mood}
-              evolutionStage={petState.evolutionStage}
-              isAnimating={petState.isAnimating}
-              aria-live="polite"
-            />
+            <EvolutionAnimation
+              isActive={isEvolving}
+              onComplete={() => {
+                setIsEvolving(false);
+              }}
+            >
+              <PetSprite
+                mood={petState.mood}
+                evolutionStage={petState.evolutionStage}
+                isAnimating={petState.isAnimating && !isEvolving}
+                aria-live="polite"
+              />
+            </EvolutionAnimation>
             <MoodMeter 
               moodLevel={moodLevel}
               moodState={petState.mood}
@@ -272,6 +357,18 @@ function App() {
             setShowSchadenfreudeModal(false);
             setSchadenfreudeModalData(null);
           }}
+        />
+      )}
+      {evolutionData && (
+        <EvolutionModal
+          isOpen={showEvolutionModal}
+          onClose={() => {
+            setShowEvolutionModal(false);
+            setEvolutionData(null);
+          }}
+          currentStage={evolutionData.currentStage}
+          nextStage={evolutionData.nextStage}
+          petMood={petState.mood}
         />
       )}
     </main>

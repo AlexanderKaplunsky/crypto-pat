@@ -27,8 +27,13 @@ const moodToTransitionClass: Record<MoodState, TransitionClassName> = {
   neutral: 'transitionToNeutral',
 };
 
-const buildSpritePath = (stage: EvolutionStage, mood: MoodState) =>
-  `/assets/sprites/pet-${stageToName[stage]}-${mood}.png`;
+const buildSpritePath = (stage: EvolutionStage, mood: MoodState) => {
+  // Use import.meta.env.BASE_URL to respect Vite's base path configuration
+  // This ensures assets work correctly on GitHub Pages with subdirectory paths
+  // BASE_URL already includes trailing slash (e.g., '/crypto-pet/' or '/')
+  const baseUrl = import.meta.env.BASE_URL;
+  return `${baseUrl}assets/sprites/pet-${stageToName[stage]}-${mood}.png`;
+};
 
 export const PetSprite = ({
   mood,

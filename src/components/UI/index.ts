@@ -3,6 +3,7 @@ export { CoinSelector } from './CoinSelector';
 export { CryptoStatusBar } from './CryptoStatusBar';
 export { MoodMeter } from './MoodMeter';
 export { Sparkline } from './Sparkline';
+export { StatsPanel } from './StatsPanel';
 export { Toast } from './Toast';
 export { CheerUpButton } from './CheerUpButton';
 export { WeatherIndicator } from './WeatherIndicator';
