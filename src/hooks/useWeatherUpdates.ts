@@ -16,7 +16,7 @@ export function useWeatherUpdates({
 }: UseWeatherUpdatesOptions) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<number | null>(null);
   const mountedRef = useRef(true);
 
   const fetchWeather = useCallback(async () => {
