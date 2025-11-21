@@ -4,3 +4,4 @@ export { CryptoStatusBar } from './CryptoStatusBar';
 export { MoodMeter } from './MoodMeter';
 export { Sparkline } from './Sparkline';
 export { Toast } from './Toast';
+export { CheerUpButton } from './CheerUpButton';

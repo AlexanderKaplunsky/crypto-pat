@@ -23,14 +23,18 @@
   
   /* UI Colors */
   --color-button-green: #32CD32;  /* Primary action buttons */
+  --color-button-green-hover: #28a028;  /* Primary button hover state */
   --color-button-red: #DC143C;    /* Destructive actions */
   --color-border: #696969;        /* Borders and outlines */
   --color-white: #FFFFFF;
   --color-black: #000000;
+  --color-bg-secondary: #f0f0f0;  /* Secondary background (disabled states) */
   
   /* Text Colors */
   --color-text-dark: #2F4F4F;     /* Primary text */
   --color-text-light: #F5F5F5;    /* Text on dark backgrounds */
+  --color-text-inverse: #fff;     /* Text on colored backgrounds */
+  --color-text-secondary: #666;   /* Secondary/muted text */
   
   /* ===== SPACING ===== */
   /* 8px scale for pixel-perfect alignment */

@@ -9,12 +9,31 @@
 import { cacheManager } from '../utils/cacheManager';
 import { ErrorHandler } from '../utils/errorHandler';
 import type { CryptoPrice } from '../types/crypto';
+import { COINS, type CoinInfo } from '../types/crypto';
 
 interface CryptoPriceResponse {
   [coinId: string]: {
     usd: number;
     usd_24h_change: number;
   };
+}
+
+export interface CryptoComparison {
+  currentCoin: {
+    id: string;
+    name: string;
+    symbol: string;
+    change24h: number;
+    price: number;
+  };
+  worseCoin: {
+    id: string;
+    name: string;
+    symbol: string;
+    change24h: number;
+    price: number;
+  };
+  message: string;
 }
 
 class CryptoService {
@@ -123,6 +142,110 @@ class CryptoService {
     } else {
       cacheManager.clearPattern('^crypto:');
     }
+  }
+
+  /**
+   * Finds a worse-performing coin compared to the current coin.
+   * Used for the Schadenfreude mechanic to make the pet feel better.
+   *
+   * @param currentCoinId - The CoinGecko coin ID of the currently selected coin
+   * @returns Promise resolving to CryptoComparison or null if no worse performer exists
+   */
+  async findWorsePerformer(currentCoinId: string): Promise<CryptoComparison | null> {
+    try {
+      // Get current coin price
+      const currentPrice = await this.fetchPrice(currentCoinId);
+      if (!currentPrice) {
+        throw new Error(`Could not fetch price for current coin: ${currentCoinId}`);
+      }
+
+      // Get current coin info
+      const currentCoinInfo = COINS.find((coin) => coin.id === currentCoinId);
+      if (!currentCoinInfo) {
+        throw new Error(`Coin info not found: ${currentCoinId}`);
+      }
+
+      // Fetch prices for multiple coins (10-15 popular coins)
+      const coinsToCompare = COINS.filter((coin) => coin.id !== currentCoinId).slice(0, 14);
+      const pricePromises = coinsToCompare.map((coin) => this.fetchPrice(coin.id));
+      const prices = await Promise.all(pricePromises);
+
+      // Filter out null results and find worse performers
+      const validPrices = prices
+        .map((price, index) => ({
+          price,
+          coin: coinsToCompare[index],
+        }))
+        .filter((item) => item.price !== null) as Array<{
+        price: CryptoPrice;
+        coin: CoinInfo;
+      }>;
+
+      // Find coins with worse 24h change than current
+      const worsePerformers = validPrices.filter(
+        (item) => item.price.change24h < currentPrice.change24h
+      );
+
+      // If no worse performer exists, return null
+      if (worsePerformers.length === 0) {
+        return null;
+      }
+
+      // Find the worst performer (lowest change24h)
+      const worstPerformer = worsePerformers.reduce((worst, current) =>
+        current.price.change24h < worst.price.change24h ? current : worst
+      );
+
+      // Generate humorous message
+      const message = this.generateSchadenfreudeMessage(
+        currentCoinInfo.name,
+        worstPerformer.coin.name,
+        currentPrice.change24h,
+        worstPerformer.price.change24h
+      );
+
+      return {
+        currentCoin: {
+          id: currentCoinInfo.id,
+          name: currentCoinInfo.name,
+          symbol: currentCoinInfo.symbol,
+          change24h: currentPrice.change24h,
+          price: currentPrice.price,
+        },
+        worseCoin: {
+          id: worstPerformer.coin.id,
+          name: worstPerformer.coin.name,
+          symbol: worstPerformer.coin.symbol,
+          change24h: worstPerformer.price.change24h,
+          price: worstPerformer.price.price,
+        },
+        message,
+      };
+    } catch (error) {
+      console.error('CryptoService.findWorsePerformer error:', error);
+      return null;
+    }
+  }
+
+  private generateSchadenfreudeMessage(
+    _currentName: string,
+    worseName: string,
+    currentChange: number,
+    worseChange: number
+  ): string {
+    const messages = [
+      `At least it's not ${worseName}!`,
+      `${worseName} is doing even worse! 😅`,
+      `Could be worse... like ${worseName}!`,
+      `${worseName} is having a rougher day!`,
+      `At least you're not ${worseName}!`,
+    ];
+
+    // Select message based on how much worse the other coin is
+    const difference = Math.abs(worseChange - currentChange);
+    const messageIndex = Math.min(Math.floor(difference / 2), messages.length - 1);
+
+    return messages[messageIndex];
   }
 }
 

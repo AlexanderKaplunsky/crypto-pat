@@ -1,2 +1,2 @@
 // Modal component exports will be added here
-export {};
+export { SchadenfreudeModal } from './SchadenfreudeModal';
