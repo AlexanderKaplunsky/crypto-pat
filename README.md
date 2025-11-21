@@ -1,6 +1,31 @@
-# React + TypeScript + Vite
+# Crypto Pet
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A fun, interactive crypto pet game that combines cryptocurrency tracking with weather-based moods and AI-powered comedy judging.
+
+## Environment Setup
+
+This project requires API keys for external services:
+
+1. **OpenWeather API** (for weather integration)
+   - Sign up at: https://openweathermap.org/api
+   - Free tier: 1,000 calls/day
+   - Required for: Weather mood modifier
+
+2. **Google Gemini AI API** (for comedy judge)
+   - Get key at: https://makersuite.google.com/app/apikey
+   - Free tier: 60 requests/minute
+   - Required for: AI Comedy Judge feature
+
+### Setup Instructions:
+1. Copy `.env.example` to `.env`
+2. Add your API keys to `.env`
+3. Restart the dev server
+
+⚠️ **Never commit `.env` to Git!**
+
+## Getting Started
+
+This project uses React + TypeScript + Vite for a modern development experience.
 
 Currently, two official plugins are available:
 
