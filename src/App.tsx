@@ -13,8 +13,6 @@ import type { CryptoComparison } from './services/CryptoService';
 import type { EvolutionCheckResult } from './utils/evolutionChecker';
 import type { EvolutionStage } from './utils/evolutionChecker';
 
-const MOOD_OPTIONS: MoodState[] = ['happy', 'neutral', 'sad'];
-
 const STAGE_NAMES: Record<1 | 2 | 3, string> = {
   1: 'Baby',
   2: 'Adult',
@@ -80,6 +78,9 @@ function App() {
     currentStage: EvolutionStage;
     nextStage: EvolutionStage;
   } | null>(null);
+  
+  // Manual evolution override flag (disables automatic evolution)
+  const [manualEvolutionOverride, setManualEvolutionOverride] = useState(false);
 
   // FTUE state
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
@@ -411,7 +412,7 @@ function App() {
     }, 3000);
   }, []);
 
-  // Evolution check hook
+  // Evolution check hook (disabled when manual override is active)
   useEvolutionCheck({
     petState: {
       ...petState,
@@ -419,6 +420,7 @@ function App() {
       interactionCount,
     },
     onEvolution: handleEvolution,
+    enabled: !manualEvolutionOverride,
   });
 
   // FTUE handlers
@@ -501,6 +503,87 @@ function App() {
     showToast('Pet reset! Starting fresh... 🐾', 'info');
   }, [showToast]);
 
+  // Expose console shortcuts for debugging
+  useEffect(() => {
+    // Map mood state to approximate mood level
+    const moodLevelMap: Record<MoodState, number> = {
+      happy: 4,
+      neutral: 3,
+      sad: 2,
+    };
+
+    // Function to change pet mood
+    (window as any).setMood = (mood: MoodState) => {
+      if (!['happy', 'neutral', 'sad'].includes(mood)) {
+        console.error('Invalid mood. Use: "happy", "neutral", or "sad"');
+        return;
+      }
+      setPetState((prev) => ({
+        ...prev,
+        mood,
+      }));
+      setMoodLevel(moodLevelMap[mood]);
+      setInteractionCount((prev) => prev + 1);
+      console.log(`Pet mood changed to: ${mood}`);
+    };
+
+    // Function to change pet evolution stage
+    (window as any).setEvolution = (stage: 1 | 2 | 3) => {
+      if (![1, 2, 3].includes(stage)) {
+        console.error('Invalid evolution stage. Use: 1 (Baby), 2 (Adult), or 3 (Legendary)');
+        return;
+      }
+      // Enable manual override to prevent automatic evolution from changing it back
+      setManualEvolutionOverride(true);
+      setPetState((prev) => ({
+        ...prev,
+        evolutionStage: stage,
+      }));
+      console.log(`Pet evolution changed to: ${STAGE_NAMES[stage]} (Stage ${stage})`);
+      console.log('Automatic evolution is now disabled. Use enableAutoEvolution() to re-enable.');
+    };
+
+    // Function to enable/disable automatic evolution
+    (window as any).enableAutoEvolution = () => {
+      setManualEvolutionOverride(false);
+      console.log('Automatic evolution enabled');
+    };
+
+    (window as any).disableAutoEvolution = () => {
+      setManualEvolutionOverride(true);
+      console.log('Automatic evolution disabled');
+    };
+
+    // Function to get current pet state
+    (window as any).getPetState = () => {
+      return {
+        mood: petState.mood,
+        evolutionStage: petState.evolutionStage,
+        stageName: STAGE_NAMES[petState.evolutionStage],
+        moodLevel,
+        ageSeconds,
+        interactionCount,
+      };
+    };
+
+    // Log available functions
+    console.log('%cCrypto Pet Console Shortcuts:', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
+    console.log('%csetMood("happy" | "neutral" | "sad")', 'color: #2196F3;');
+    console.log('%csetEvolution(1 | 2 | 3)', 'color: #2196F3;');
+    console.log('%cgetPetState()', 'color: #2196F3;');
+    console.log('%cenableAutoEvolution() / disableAutoEvolution()', 'color: #FF9800;');
+    console.log('Example: setMood("happy") or setEvolution(2)');
+
+    // Cleanup on unmount
+    return () => {
+      delete (window as any).setMood;
+      delete (window as any).setEvolution;
+      delete (window as any).getPetState;
+      delete (window as any).enableAutoEvolution;
+      delete (window as any).disableAutoEvolution;
+    };
+  }, [petState, moodLevel, ageSeconds, interactionCount]);
+
   return (
     <main className="appShell">
       <div className="appContent">
@@ -570,25 +653,13 @@ function App() {
             </div>
           </div>
         </PetDisplay>
-
-        <div className="controlPanel" role="group" aria-label="Mood controls">
-          {MOOD_OPTIONS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={`controlButton${petState.mood === option ? ' active' : ''}`}
-              onClick={() => handleMoodChange(option)}
-            >
-              {option.charAt(0).toUpperCase() + option.slice(1)}
-            </button>
-          ))}
-        </div>
       </div>
       {toasts.map((toast, index) => (
         <Toast
           key={toast.id}
           message={toast.message}
           type={toast.type}
+          duration={toast.duration}
           onClose={() => dismissToast(toast.id)}
           style={{
             top: `${20 + index * 80}px`,

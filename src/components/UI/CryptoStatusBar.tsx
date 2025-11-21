@@ -62,6 +62,7 @@ export const CryptoStatusBar = ({ coinId }: CryptoStatusBarProps) => {
           <Toast
             message={errorMessage}
             type="warning"
+            duration={3000}
             onClose={() => setShowToast(false)}
           />
         )}
