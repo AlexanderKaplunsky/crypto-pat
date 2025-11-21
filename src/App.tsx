@@ -1,10 +1,10 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import './App.css';
 import { ParticleSystem, PetDisplay, PetSprite } from './components';
-import { CoinSelector, CryptoStatusBar, MoodMeter, Toast, CheerUpButton } from './components/UI';
+import { CoinSelector, CryptoStatusBar, MoodMeter, Toast, CheerUpButton, WeatherIndicator } from './components/UI';
 import { SchadenfreudeModal } from './components/Modals';
 import petDisplayStyles from './components/Pet/PetDisplay.module.css';
-import { useCryptoUpdates, useSchadenfreude, useToast } from './hooks';
+import { useCryptoUpdates, useGeolocation, useSchadenfreude, useToast, useWeatherUpdates } from './hooks';
 import { calculateMood, loadPetState, savePetState } from './utils';
 import { COINS } from './types';
 import type { MoodState, PetState } from './types/pet';
@@ -36,22 +36,31 @@ function App() {
   const [schadenfreudeModalData, setSchadenfreudeModalData] = useState<CryptoComparison | null>(null);
   const [showSchadenfreudeModal, setShowSchadenfreudeModal] = useState(false);
   
+  // Get geolocation for weather
+  const { latitude, longitude } = useGeolocation();
+  
+  // Get weather data and mood modifier
+  const { weather, isLoading: isWeatherLoading, moodModifier } = useWeatherUpdates({
+    latitude,
+    longitude,
+    enabled: !!latitude && !!longitude,
+  });
+  
   // Get price data from crypto updates hook
   const { priceData } = useCryptoUpdates({ coinId: selectedCoinId });
   
-  // Weather modifier (defaults to 0 until Epic 6 is implemented)
-  const weatherModifier = 0;
-  
-  // Track previous price change to avoid unnecessary recalculations
+  // Track previous values to avoid unnecessary recalculations
   const prevPriceChangeRef = useRef<number | null>(null);
+  const prevMoodModifierRef = useRef<number>(0);
   const prevCoinIdRef = useRef<string>(selectedCoinId);
   
-  // Calculate mood from price changes
+  // Calculate mood from price changes and weather
   useEffect(() => {
-    // Reset price change tracking when coin changes
+    // Reset tracking when coin changes
     if (prevCoinIdRef.current !== selectedCoinId) {
       prevCoinIdRef.current = selectedCoinId;
       prevPriceChangeRef.current = null;
+      prevMoodModifierRef.current = moodModifier;
     }
     
     if (!priceData) {
@@ -59,13 +68,20 @@ function App() {
       return;
     }
     
-    // Only recalculate if price change actually changed
-    if (prevPriceChangeRef.current === priceData.change24h) {
+    // Recalculate mood when price or weather modifier changes
+    const priceChanged = prevPriceChangeRef.current !== priceData.change24h;
+    const weatherChanged = prevMoodModifierRef.current !== moodModifier;
+    
+    if (!priceChanged && !weatherChanged) {
+      // Neither price nor weather changed, no need to recalculate
       return;
     }
     
+    // Update refs before calculation
     prevPriceChangeRef.current = priceData.change24h;
-    const newMood = calculateMood(priceData.change24h, weatherModifier);
+    prevMoodModifierRef.current = moodModifier;
+    
+    const newMood = calculateMood(priceData.change24h, moodModifier);
     
     // Update pet state with new mood (PetSprite will handle transition animations)
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -82,7 +98,7 @@ function App() {
     
     // Update mood level
     setMoodLevel(newMood.moodLevel);
-  }, [priceData, weatherModifier, selectedCoinId]);
+  }, [priceData, moodModifier, selectedCoinId]);
   
   // Save mood to LocalStorage whenever it changes
   useEffect(() => {
@@ -197,6 +213,8 @@ function App() {
         </header>
 
         <CryptoStatusBar coinId={selectedCoinId} />
+
+        <WeatherIndicator weather={weather} isLoading={isWeatherLoading} />
 
         <PetDisplay>
           <ParticleSystem active={petState.mood === 'happy'} />
