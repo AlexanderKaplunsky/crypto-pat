@@ -1,13 +1,13 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import './App.css';
 import { EvolutionAnimation, ParticleSystem, PetDisplay, PetSprite } from './components';
-import { CoinSelector, CryptoStatusBar, MoodMeter, StatsPanel, Toast, CheerUpButton, TellJokeButton, WeatherIndicator } from './components/UI';
-import { EvolutionModal, SchadenfreudeModal, ComedyJudgeModal, ComedyJudgeResultsModal } from './components/Modals';
+import { CoinSelector, CryptoStatusBar, MoodMeter, StatsPanel, Toast, CheerUpButton, TellJokeButton, WeatherIndicator, ResetButton } from './components/UI';
+import { EvolutionModal, SchadenfreudeModal, ComedyJudgeModal, ComedyJudgeResultsModal, WelcomeModal, TutorialModal } from './components/Modals';
 import petDisplayStyles from './components/Pet/PetDisplay.module.css';
 import { useCryptoUpdates, useEvolutionCheck, useGeolocation, useSchadenfreude, useToast, useWeatherUpdates, useComedyJudge } from './hooks';
 import type { JokeRating } from './types/comedy';
-import { calculateMood, loadPetState, savePetState } from './utils';
-import { COINS } from './types';
+import { calculateMood, loadPetState, savePetState, getCooldownExpiresAt, setCooldown, resetAllPetData, clearAllCooldowns, hasPetState, hasCompletedFTUE, markFTUECompleted } from './utils';
+import { COINS, getCoinById } from './types';
 import type { MoodState, PetState } from './types/pet';
 import type { CryptoComparison } from './services/CryptoService';
 import type { EvolutionCheckResult } from './utils/evolutionChecker';
@@ -15,14 +15,41 @@ import type { EvolutionStage } from './utils/evolutionChecker';
 
 const MOOD_OPTIONS: MoodState[] = ['happy', 'neutral', 'sad'];
 
+const STAGE_NAMES: Record<1 | 2 | 3, string> = {
+  1: 'Baby',
+  2: 'Adult',
+  3: 'Legendary',
+} as const;
+
 function App() {
-  const [selectedCoinId, setSelectedCoinId] = useState<string>('bitcoin');
-  
-  // Load saved mood state from LocalStorage on initialization
+  // Load saved state from LocalStorage on initialization
   const savedState = loadPetState();
+  
+  // Restore cooldowns from saved state
+  useEffect(() => {
+    const schadenfreudeUntil = savedState.schadenfreudeCooldownUntil;
+    const comedyUntil = savedState.comedyCooldownUntil;
+    
+    if (schadenfreudeUntil) {
+      const remaining = Math.max(0, Math.ceil((schadenfreudeUntil - Date.now()) / 1000));
+      if (remaining > 0) {
+        setCooldown('schadenfreude', remaining);
+      }
+    }
+    if (comedyUntil) {
+      const remaining = Math.max(0, Math.ceil((comedyUntil - Date.now()) / 1000));
+      if (remaining > 0) {
+        setCooldown('comedy', remaining);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount - savedState is constant from initial load
+  
+  const [selectedCoinId, setSelectedCoinId] = useState<string>(savedState.selectedCoin || 'bitcoin');
+  
   const [petState, setPetState] = useState<PetState>({
     mood: savedState.moodState,
-    evolutionStage: 2,
+    evolutionStage: (savedState.evolutionStage || 1) as 1 | 2 | 3,
     isAnimating: true,
   });
   
@@ -54,9 +81,28 @@ function App() {
     nextStage: EvolutionStage;
   } | null>(null);
 
+  // FTUE state
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showTutorialModal, setShowTutorialModal] = useState(false);
+
   // Track pet age and interactions for evolution
-  const [ageSeconds, setAgeSeconds] = useState<number>(0);
-  const [interactionCount, setInteractionCount] = useState<number>(0);
+  const [ageSeconds, setAgeSeconds] = useState<number>(savedState.ageSeconds || 0);
+  const [interactionCount, setInteractionCount] = useState<number>(savedState.interactionCount || 0);
+  
+  // Track additional stats
+  const [schadenfreudeCount, setSchadenfreudeCount] = useState<number>(savedState.schadenfreudeCount || 0);
+  const [comedyAttempts, setComedyAttempts] = useState<number>(savedState.comedyAttempts || 0);
+  const [comedySuccesses, setComedySuccesses] = useState<number>(savedState.comedySuccesses || 0);
+
+  // Check if FTUE should be shown on mount
+  useEffect(() => {
+    const hasPet = hasPetState();
+    const ftueCompleted = hasCompletedFTUE();
+    
+    if (!hasPet && !ftueCompleted) {
+      setShowWelcomeModal(true);
+    }
+  }, []);
   
   // Get geolocation for weather
   const { latitude, longitude } = useGeolocation();
@@ -106,7 +152,6 @@ function App() {
     const newMood = calculateMood(priceData.change24h, moodModifier);
     
     // Update pet state with new mood (PetSprite will handle transition animations)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPetState((prev) => {
       // Only update if mood state actually changed (to avoid unnecessary re-renders)
       if (prev.mood === newMood.moodState) {
@@ -122,13 +167,49 @@ function App() {
     setMoodLevel(newMood.moodLevel);
   }, [priceData, moodModifier, selectedCoinId]);
   
-  // Save mood to LocalStorage whenever it changes
+  // Auto-save all state to LocalStorage whenever it changes
   useEffect(() => {
+    const coin = getCoinById(selectedCoinId);
+    const stageName = STAGE_NAMES[petState.evolutionStage];
+    
+    // Get cooldown timestamps
+    const schadenfreudeCooldownUntil = getCooldownExpiresAt('schadenfreude');
+    const comedyCooldownUntil = getCooldownExpiresAt('comedy');
+    
     savePetState({
+      selectedCoin: selectedCoinId,
+      coinSymbol: coin?.symbol.toUpperCase(),
+      currentPrice: priceData?.price,
+      priceChange24h: priceData?.change24h,
+      lastPriceUpdate: priceData?.timestamp,
       moodLevel,
       moodState: petState.mood,
+      weatherCondition: weather?.condition,
+      weatherMoodModifier: weather?.moodModifier,
+      lastWeatherUpdate: weather?.timestamp,
+      evolutionStage: petState.evolutionStage,
+      stageName,
+      ageSeconds,
+      interactionCount,
+      schadenfreudeCount,
+      comedyAttempts,
+      comedySuccesses,
+      schadenfreudeCooldownUntil: schadenfreudeCooldownUntil || undefined,
+      comedyCooldownUntil: comedyCooldownUntil || undefined,
     });
-  }, [moodLevel, petState.mood]);
+  }, [
+    selectedCoinId,
+    priceData,
+    moodLevel,
+    petState.mood,
+    petState.evolutionStage,
+    weather,
+    ageSeconds,
+    interactionCount,
+    schadenfreudeCount,
+    comedyAttempts,
+    comedySuccesses,
+  ]);
 
   // Watch for mood state changes and show notifications
   useEffect(() => {
@@ -202,8 +283,9 @@ function App() {
 
   // Schadenfreude handler
   const handleCheerUp = useCallback(async () => {
-    // Increment interaction count
+    // Increment interaction count and schadenfreude count
     setInteractionCount((prev) => prev + 1);
+    setSchadenfreudeCount((prev) => prev + 1);
     
     const comparison = await triggerSchadenfreude();
     
@@ -224,6 +306,9 @@ function App() {
 
   const handleComedySubmit = useCallback(async (jokeText: string) => {
     try {
+      // Increment comedy attempts
+      setComedyAttempts((prev) => prev + 1);
+      
       const rating = await submitJoke(jokeText);
       if (rating) {
         setComedyRating(rating);
@@ -239,6 +324,8 @@ function App() {
         const threshold = thresholds[petState.mood] ?? thresholds.neutral;
         
         if (rating.rating >= threshold) {
+          // Increment comedy successes
+          setComedySuccesses((prev) => prev + 1);
           // Trigger laughing animation
           setIsLaughing(true);
           // Clear laughing animation after 1.5 seconds
@@ -270,12 +357,24 @@ function App() {
   }, []);
 
   // Track pet age (increment every second)
+  // Age continues from saved state, so we calculate elapsed time since creation
   useEffect(() => {
+    const savedAge = savedState.ageSeconds || 0;
+    const savedCreatedAt = savedState.createdAt;
+    
+    if (savedCreatedAt) {
+      // Calculate elapsed time since creation
+      const elapsedSinceCreation = Math.floor((Date.now() - savedCreatedAt) / 1000);
+      const initialAge = Math.max(savedAge, elapsedSinceCreation);
+      setAgeSeconds(initialAge);
+    }
+    
     const interval = setInterval(() => {
       setAgeSeconds((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount - savedState is constant from initial load
 
   // Evolution handler
   const handleEvolution = useCallback((result: EvolutionCheckResult) => {
@@ -288,10 +387,12 @@ function App() {
       legendary: 3,
     };
 
+    const newStage = stageMap[result.nextStage];
+
     // Update pet state to new evolution stage
     setPetState((prev) => ({
       ...prev,
-      evolutionStage: stageMap[result.nextStage!],
+      evolutionStage: newStage,
     }));
 
     // Store evolution data for modal
@@ -320,6 +421,29 @@ function App() {
     onEvolution: handleEvolution,
   });
 
+  // FTUE handlers
+  const handleWelcomeGetStarted = useCallback(() => {
+    setShowWelcomeModal(false);
+    if (!hasCompletedFTUE()) {
+      setShowTutorialModal(true);
+    }
+  }, []);
+
+  const handleWelcomeSkip = useCallback(() => {
+    setShowWelcomeModal(false);
+    markFTUECompleted();
+  }, []);
+
+  const handleTutorialComplete = useCallback(() => {
+    setShowTutorialModal(false);
+    markFTUECompleted();
+  }, []);
+
+  const handleTutorialSkip = useCallback(() => {
+    setShowTutorialModal(false);
+    markFTUECompleted();
+  }, []);
+
   // Manual mood override (for testing/debugging - can be removed in production)
   const handleMoodChange = useCallback((nextMood: MoodState) => {
     // Map mood state to approximate mood level for manual overrides
@@ -338,12 +462,59 @@ function App() {
     setInteractionCount((prev) => prev + 1);
   }, []);
 
+  // Reset pet handler
+  const handleReset = useCallback(() => {
+    // Clear all LocalStorage data
+    resetAllPetData();
+    clearAllCooldowns();
+    
+    // Reset all component state to defaults
+    setSelectedCoinId('bitcoin');
+    setPetState({
+      mood: 'neutral',
+      evolutionStage: 1,
+      isAnimating: true,
+    });
+    setMoodLevel(3);
+    setAgeSeconds(0);
+    setInteractionCount(0);
+    setSchadenfreudeCount(0);
+    setComedyAttempts(0);
+    setComedySuccesses(0);
+    
+    // Reset modal states
+    setShowSchadenfreudeModal(false);
+    setSchadenfreudeModalData(null);
+    setShowComedyJudgeModal(false);
+    setShowComedyResultsModal(false);
+    setComedyRating(null);
+    setShowEvolutionModal(false);
+    setEvolutionData(null);
+    setIsEvolving(false);
+    setIsLaughing(false);
+    setConfettiTrigger(0);
+    
+    // Reset previous mood ref
+    prevMoodStateRef.current = 'neutral';
+    
+    // Show toast notification
+    showToast('Pet reset! Starting fresh... 🐾', 'info');
+  }, [showToast]);
+
   return (
     <main className="appShell">
       <div className="appContent">
         <header className="appHeader">
-          <h1>Crypto Pet</h1>
-          <p>Keep your pixel companion happy and thriving.</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', position: 'relative' }}>
+            <div style={{ flex: 1 }}></div>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <h1>Crypto Pet</h1>
+              <p>Keep your pixel companion happy and thriving.</p>
+            </div>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+              <ResetButton onReset={handleReset} />
+            </div>
+          </div>
           <CoinSelector 
             selectedCoinId={selectedCoinId}
             onCoinChange={setSelectedCoinId}
@@ -461,6 +632,16 @@ function App() {
           onSuccess={handleComedySuccess}
         />
       )}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={handleWelcomeSkip}
+        onGetStarted={handleWelcomeGetStarted}
+      />
+      <TutorialModal
+        isOpen={showTutorialModal}
+        onClose={handleTutorialSkip}
+        onComplete={handleTutorialComplete}
+      />
     </main>
   );
 }

@@ -111,6 +111,24 @@ Requirements:
 
 The script writes PNGs to `public/assets/sprites` using the naming scheme `pet-{stage}-{mood}.png`, matching the `PetSprite` component expectations and the Epic 2 art specification.
 
+## Deployment
+
+This app is automatically deployed to GitHub Pages on every push to `main` or `master` branch.
+
+See [DEPLOYMENT.md](../docs/DEPLOYMENT.md) for detailed deployment instructions.
+
+### Live Demo
+
+After deployment, the app will be available at:
+`https://[username].github.io/[repository-name]/`
+
+### Manual Deployment
+
+To manually trigger deployment:
+1. Go to Actions tab in GitHub
+2. Select "Deploy to GitHub Pages" workflow
+3. Click "Run workflow"
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:

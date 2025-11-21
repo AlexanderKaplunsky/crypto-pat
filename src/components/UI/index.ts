@@ -8,3 +8,4 @@ export { Toast } from './Toast';
 export { CheerUpButton } from './CheerUpButton';
 export { TellJokeButton } from './TellJokeButton';
 export { WeatherIndicator } from './WeatherIndicator';
+export { ResetButton } from './ResetButton';

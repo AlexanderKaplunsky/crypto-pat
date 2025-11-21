@@ -1,0 +1,22 @@
+.resetButton {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.875rem;
+  background-color: var(--color-button-gray);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  font-family: var(--font-pixel);
+  font-size: var(--font-size-xs);
+}
+
+.resetButton:hover {
+  background-color: var(--color-button-red);
+  color: white;
+}
+
+.resetButton:active {
+  transform: scale(0.98);
+}
+
